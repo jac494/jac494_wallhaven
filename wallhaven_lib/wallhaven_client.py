@@ -26,13 +26,15 @@ class WallhavenClient:
 
     def get_collections(self, user: Union[str, None] = None):
         logging.info(f"Gathering user collections for {self.username}")
-        result = requests.get(self.urls.get('collections'), params=self.base_get_params)
+        result = requests.get(self.urls.get("collections"), params=self.base_get_params)
         collections_json_result = result.json()
         logging.debug(f"{collections_json_result=}")
-        collection_list = [WallhavenCollection(**collection) for collection in collections_json_result['data']]
+        collection_list = [
+            WallhavenCollection(**collection)
+            for collection in collections_json_result["data"]
+        ]
         logging.debug(f"Retrived collections: {collection_list=}")
         return collection_list
-
 
     def get_image_metadata(self, image_id):
         pass

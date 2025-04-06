@@ -9,6 +9,7 @@ import sys
 from pprint import pprint
 from types import SimpleNamespace
 
+from wallhaven_lib.file_manager import FileManager
 from wallhaven_lib.helpers import load_config_file
 from wallhaven_lib.wallhaven_client import WallhavenClient
 from wallhaven_lib.wallhaven_models import WallhavenCollection
@@ -26,46 +27,35 @@ CONFIG = SimpleNamespace(
             "%(funcName)s "
             "%(message)s"
         ),
-        LEVEL=logging.DEBUG
-    )
+        LEVEL=logging.DEBUG,
+    ),
 )
 
 
-def experimental_main(config):
-    # get collections = https://wallhaven.cc/api/v1/collections?apikey=<API KEY>
-    base_url = config.WALLHAVEN_API_BASE_URL
-    collections_url = base_url + "collections"
-    params = {"apikey": config.API_KEY}
-    collections = requests.get(collections_url, params=params)
-    print(collections)
-    collection_data = json.loads(collections.text)["data"]
-    pprint(collection_data)
-    collection_list = [WallhavenCollection(**col) for col in collection_data]
-    collection_list.sort(key=lambda collection: collection.label.lower())
-    pprint(collection_list)
-
-    tmp_col = collection_list[5].id
-    tmp = requests.get(collections_url + "/AntsyDC/" + str(tmp_col), params=params)
-    pprint(json.loads(tmp.text))
-
-
 def main(config):
-    os.makedirs(config.SYNC_BASE_PATH, exist_ok=True)
+    fm = FileManager(config.SYNC_BASE_PATH)
     wclient = WallhavenClient(
         base_url=config.WALLHAVEN_API_BASE_URL,
         username=config.USERNAME,
         api_key=config.API_KEY,
     )
     collections = wclient.get_collections()
+    # some todos-
+    # 1. for each collection, make sure a directory exists with that name
+    # create two directories for images
+    # - image metadata to store the json text for a given image
+    # - image dir for the actual images themselves
+    # create symlinks from the collection directory to the images in the image directory
+    for collection in collections:
+        fm.add_managed_collection_dir(collection.label)
 
 
 if __name__ == "__main__":
     load_config_file(CONFIG, CONFIG.CONFIG_FILE)
-    # experimental_main(config=CONFIG)
     logging.basicConfig(
         filename=CONFIG.LOGGING.FILENAME,
         level=CONFIG.LOGGING.LEVEL,
-        format=CONFIG.LOGGING.FORMAT
+        format=CONFIG.LOGGING.FORMAT,
     )
     logging.info("Starting wallhaven_sync.py")
     logging.debug(f"Calling main with config {CONFIG=}")

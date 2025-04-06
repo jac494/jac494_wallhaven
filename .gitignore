@@ -1,3 +1,4 @@
 __pycache__/*
 wallhaven_sync_conf.json
 venv/*
+*.log

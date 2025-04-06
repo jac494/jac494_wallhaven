@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
 
 import json
+import logging
 import os
 import requests
+import sys
 
 from pprint import pprint
 from types import SimpleNamespace
@@ -14,6 +16,18 @@ from wallhaven_lib.wallhaven_models import WallhavenCollection
 CONFIG = SimpleNamespace(
     CONFIG_FILE="wallhaven_sync_conf.json",
     WALLHAVEN_API_BASE_URL="https://wallhaven.cc/api/v1/",
+    LOGGING=SimpleNamespace(
+        FILENAME="wallhaven_sync.log",
+        FORMAT=(
+            "%(asctime)s "
+            "%(levelname)s "
+            "%(module)s "
+            "%(filename)s "
+            "%(funcName)s "
+            "%(message)s"
+        ),
+        LEVEL=logging.DEBUG
+    )
 )
 
 
@@ -36,20 +50,25 @@ def experimental_main(config):
 
 
 def main(config):
-    os.makedirs(config.SYNC_BASE_PATH, exists_ok=True)
+    os.makedirs(config.SYNC_BASE_PATH, exist_ok=True)
     wclient = WallhavenClient(
         base_url=config.WALLHAVEN_API_BASE_URL,
         username=config.USERNAME,
         api_key=config.API_KEY,
     )
-    img_data = wclient.download_image_by_url(
-        "https://w.wallhaven.cc/full/gp/wallhaven-gproj3.png"
-    )
-    with open(os.path.join(config.SYNC_BASE_PATH, "wallhaven-gproj3.png"), "wb") as fp:
-        fp.write(img_data)
+    collections = wclient.get_collections()
 
 
 if __name__ == "__main__":
     load_config_file(CONFIG, CONFIG.CONFIG_FILE)
     # experimental_main(config=CONFIG)
+    logging.basicConfig(
+        filename=CONFIG.LOGGING.FILENAME,
+        level=CONFIG.LOGGING.LEVEL,
+        format=CONFIG.LOGGING.FORMAT
+    )
+    logging.info("Starting wallhaven_sync.py")
+    logging.debug(f"Calling main with config {CONFIG=}")
     main(config=CONFIG)
+    logging.info("Complete, exiting")
+    sys.exit(0)
